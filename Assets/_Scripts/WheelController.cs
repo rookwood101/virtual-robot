@@ -5,7 +5,7 @@ using UnityEngine;
 
 public class WheelController : MonoBehaviour
 {
-    private Vector2 desiredVelocity = Vector2.left;
+    private Vector2 desiredVelocity = Vector2.right;
     private WheelCollider leftWheel;
     private WheelCollider rightWheel;
     private new Rigidbody rigidbody;
@@ -26,7 +26,7 @@ public class WheelController : MonoBehaviour
         anglePid = new GameObject("anglePid " + Guid.NewGuid().ToString(), new Type[] {typeof(PID)}).GetComponent<PID>();
         speedPid = new GameObject("speedPid " + Guid.NewGuid().ToString(), new Type[] {typeof(PID)}).GetComponent<PID>();
         speedPid.Init(1f, 0.0f, 0.1f);
-        anglePid.Init(0.01f, 0f, 0f);
+        anglePid.Init(0.1f, 0f, 0.1f);
         startTime = Time.unscaledTime;
     }
 
@@ -49,8 +49,8 @@ public class WheelController : MonoBehaviour
         //  u(t) = Kp*e(t) + Ki*∫0,t e(τ) dτ + Kd*de(t)/dt
 
         var currentVelocity = new Vector2(rigidbody.velocity.x, rigidbody.velocity.z);
-        // var angleError = Mathf.InverseLerp(0, 180, Vector2.SignedAngle(currentVelocity, desiredVelocity));
-        var angleError = Vector2.SignedAngle(currentVelocity, desiredVelocity);
+        // var angleError = Mathf.InverseLerp(-180, 180, Vector2.SignedAngle(currentVelocity, desiredVelocity));
+        var angleError = -Vector2.SignedAngle(currentVelocity, desiredVelocity);
         var angleCorrection = anglePid.GetOutput(angleError, Time.fixedDeltaTime);
         var speedError = desiredVelocity.magnitude - currentVelocity.magnitude;
         var speedCorrection = speedPid.GetOutput(speedError, Time.fixedDeltaTime);
