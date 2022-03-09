@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -8,8 +9,10 @@ public class WheelController : MonoBehaviour
     private WheelCollider leftWheel;
     private WheelCollider rightWheel;
     private new Rigidbody rigidbody;
-    private PID anglePid = new PID(1, 2, 3);
-    private PID speedPid = new PID(1, 2, 3);
+    private PID anglePid;
+    private PID speedPid;
+
+    private float startTime;
 
     void Start()
     {
@@ -20,6 +23,11 @@ public class WheelController : MonoBehaviour
         this.rigidbody = GetComponent<Rigidbody>();
         leftWheel.motorTorque = 0;
         rightWheel.motorTorque = 0;
+        anglePid = new GameObject("anglePid " + Guid.NewGuid().ToString(), new Type[] {typeof(PID)}).GetComponent<PID>();
+        speedPid = new GameObject("speedPid " + Guid.NewGuid().ToString(), new Type[] {typeof(PID)}).GetComponent<PID>();
+        speedPid.Init(1f, 0.0f, 0.1f);
+        anglePid.Init(0.01f, 0f, 0f);
+        startTime = Time.unscaledTime;
     }
 
     void FixedUpdate()
@@ -41,15 +49,35 @@ public class WheelController : MonoBehaviour
         //  u(t) = Kp*e(t) + Ki*∫0,t e(τ) dτ + Kd*de(t)/dt
 
         var currentVelocity = new Vector2(rigidbody.velocity.x, rigidbody.velocity.z);
+        // var angleError = Mathf.InverseLerp(0, 180, Vector2.SignedAngle(currentVelocity, desiredVelocity));
         var angleError = Vector2.SignedAngle(currentVelocity, desiredVelocity);
         var angleCorrection = anglePid.GetOutput(angleError, Time.fixedDeltaTime);
-        var speedError = currentVelocity.magnitude - desiredVelocity.magnitude;
+        var speedError = desiredVelocity.magnitude - currentVelocity.magnitude;
         var speedCorrection = speedPid.GetOutput(speedError, Time.fixedDeltaTime);
 
-        leftWheel.motorTorque = leftWheel.motorTorque + speedError + angleError;
-        rightWheel.motorTorque = rightWheel.motorTorque + speedError - angleError;
+        leftWheel.motorTorque = Mathf.Clamp(leftWheel.motorTorque + speedCorrection + angleCorrection, -20, 20);
+        rightWheel.motorTorque = Mathf.Clamp(rightWheel.motorTorque + speedCorrection - angleCorrection, -20, 20);
 
-        print($"angle {angleCorrection} = pid({angleError}, dt)");
-        print($"speed {speedCorrection} = pid({speedError}, dt)");
+        print($"speed {speedCorrection} = pid({speedError}, dt) {Time.unscaledTime - startTime}");
+        print($"angle {angleCorrection} = pid({angleError}, dt) {Time.unscaledTime - startTime}");
+
+        ApplyLocalPositionToVisuals(leftWheel);
+        ApplyLocalPositionToVisuals(rightWheel);
+    }
+
+    public void ApplyLocalPositionToVisuals(WheelCollider wheel)
+    {
+        if (wheel.transform.childCount == 0) {
+            return;
+        }
+     
+        Transform visualWheel = wheel.transform.GetChild(0);
+     
+        Vector3 position;
+        Quaternion rotation;
+        wheel.GetWorldPose(out position, out rotation);
+     
+        visualWheel.transform.position = position;
+        visualWheel.transform.rotation = rotation;
     }
 }

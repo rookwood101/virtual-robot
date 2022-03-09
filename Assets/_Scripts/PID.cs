@@ -1,9 +1,11 @@
-public class PID {
+using UnityEngine;
 
-    private float kp, ki, kd;
-    private float P, I, D, prevError = 0;
+public class PID : MonoBehaviour {
 
-    public PID(float kp, float ki, float kd) {
+    public float kp, ki, kd = 0;
+    public float P, I, D, prevError = 0;
+
+    public void Init(float kp, float ki, float kd) {
         this.kp = kp;
         this.ki = ki;
         this.kd = kd;
