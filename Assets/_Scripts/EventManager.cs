@@ -1,106 +1,88 @@
-using UnityEngine;
+#nullable enable
 using UnityEngine.Events;
-using System.Collections;
+using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-public class EventManager : MonoBehaviour
+public sealed class EventType {
+    public readonly Type EventParameterType;
+    public EventType(Type eventParameterType) {
+        this.EventParameterType = eventParameterType;
+    }
+}
+
+public sealed class Null {
+    private Null() { }
+}
+
+public class EventManager
 {
-    private Dictionary<CustomEventType, UnityEvent<object>> eventDictionary;
-    private Dictionary<CustomEventType, TaskCompletionSource<object>> eventCompleteAwaiters;
+    private Dictionary<EventType, UnityEvent<object?>> eventDictionary = new Dictionary<EventType, UnityEvent<object?>>();
+    private Dictionary<EventType, TaskCompletionSource<object?>> eventCompleteAwaiters = new Dictionary<EventType, TaskCompletionSource<object?>>();
 
-    private static EventManager eventManager;
-
-    public static EventManager Instance
+    public void AddListener(EventType eventType, UnityAction<object?> listener)
     {
-        get
-        {
-            if (!eventManager)
-            {
-                eventManager = FindObjectOfType(typeof(EventManager)) as EventManager;
-
-                if (!eventManager)
-                {
-                    Debug.LogError("There needs to be one active EventManger script on a GameObject in your scene.");
-                }
-                else
-                {
-                    eventManager.Init();
-                }
-            }
-
-            return eventManager;
-        }
-    }
-
-    void Init()
-    {
-        if (eventDictionary == null)
-        {
-            eventDictionary = new Dictionary<CustomEventType, UnityEvent<object>>();
-            eventCompleteAwaiters = new Dictionary<CustomEventType, TaskCompletionSource<object>>();
-        }
-    }
-
-    public static void AddListener(CustomEventType eventName, UnityAction<object> listener)
-    {
-        UnityEvent<object> thisEvent = null;
-        if (Instance.eventDictionary.TryGetValue(eventName, out thisEvent))
+        UnityEvent<object?> thisEvent;
+        if (eventDictionary.TryGetValue(eventType, out thisEvent))
         {
             thisEvent.AddListener(listener);
         }
         else
         {
-            thisEvent = new UnityEvent<object>();
+            thisEvent = new UnityEvent<object?>();
             thisEvent.AddListener(listener);
-            Instance.eventDictionary.Add(eventName, thisEvent);
+            eventDictionary.Add(eventType, thisEvent);
         }
     }
 
-    public static void RemoveListener(CustomEventType eventName, UnityAction<object> listener)
+    public void RemoveListener(EventType eventType, UnityAction<object?> listener)
     {
-        if (eventManager == null) return;
-        UnityEvent<object> thisEvent = null;
-        if (Instance.eventDictionary.TryGetValue(eventName, out thisEvent))
+        UnityEvent<object?> thisEvent;
+        if (eventDictionary.TryGetValue(eventType, out thisEvent))
         {
             thisEvent.RemoveListener(listener);
         }
     }
 
-    public static void TriggerEvent(CustomEventType eventName, object parameter)
+    public void TriggerEvent(EventType eventType, object? parameter)
     {
-        UnityEvent<object> thisEvent = null;
-        if (Instance.eventDictionary.TryGetValue(eventName, out thisEvent))
+        if (!eventType.EventParameterType.IsInstanceOfType(parameter) && !(parameter is null)) {
+
+            throw new ArgumentException($"Event parameter of type {parameter.GetType()} is not compatible with event type");
+        }
+
+        UnityEvent<object?> thisEvent;
+        if (eventDictionary.TryGetValue(eventType, out thisEvent))
         {
             thisEvent.Invoke(parameter);
         }
-        TaskCompletionSource<object> taskCompletion;
-        if (Instance.eventCompleteAwaiters.TryGetValue(eventName, out taskCompletion))
+        TaskCompletionSource<object?> taskCompletion;
+        if (eventCompleteAwaiters.TryGetValue(eventType, out taskCompletion))
         {
-            Instance.eventCompleteAwaiters.Remove(eventName);
+            eventCompleteAwaiters.Remove(eventType);
             taskCompletion.SetResult(parameter);
         }
     }
 
-    public static async Task<object> WaitForEvent(CustomEventType eventName)
+    public async Task<object?> WaitForEvent(EventType eventType)
     {
-        TaskCompletionSource<object> taskCompletion;
-        if (!Instance.eventCompleteAwaiters.TryGetValue(eventName, out taskCompletion))
+        TaskCompletionSource<object?> taskCompletion;
+        if (!eventCompleteAwaiters.TryGetValue(eventType, out taskCompletion))
         {
-            taskCompletion = new TaskCompletionSource<object>();
-            Instance.eventCompleteAwaiters[eventName] = taskCompletion;
+            taskCompletion = new TaskCompletionSource<object?>();
+            eventCompleteAwaiters[eventType] = taskCompletion;
         }
 
         return await taskCompletion.Task;
     }
 
-    public static async Task<T> WaitForEventUntil<T>(CustomEventType eventName, T value) where T : class
+    public async Task<object?> WaitForEventUntil(EventType eventType, object? value)
     {
-        T eventValue;
+        object? eventValue;
         do
         {
-            eventValue = (T)await EventManager.WaitForEvent(eventName);
-        } while (!eventValue.Equals(value));
+            eventValue = await WaitForEvent(eventType);
+        } while (!object.Equals(eventValue, value));
 
         return eventValue;
     }

@@ -26,7 +26,7 @@ public class WheelController : MonoBehaviour
         anglePid = new GameObject("anglePid " + Guid.NewGuid().ToString(), new Type[] {typeof(PID)}).GetComponent<PID>();
         speedPid = new GameObject("speedPid " + Guid.NewGuid().ToString(), new Type[] {typeof(PID)}).GetComponent<PID>();
         speedPid.Init(1f, 0.0f, 0.1f);
-        anglePid.Init(0.1f, 0f, 0.1f);
+        anglePid.Init(0.1f, 0.0f, 0.1f);
         startTime = Time.unscaledTime;
     }
 
