@@ -25,6 +25,7 @@ public class BallLocator : MonoBehaviour
         CvInvoke.Imshow("frame", mat);
         CvInvoke.CvtColor(mat, mat, Emgu.CV.CvEnum.ColorConversion.Rgb2Hsv);
         var saturationThreshold = 25; // out of 255
+        CvInvoke.GaussianBlur(mat, mat, new Size(11, 11), 0);
         CvInvoke.InRange(mat, new ScalarArray(new MCvScalar(0, 0, 0)), new ScalarArray(new MCvScalar(255, saturationThreshold, 255)), mat);
         CvInvoke.Imshow("threshold", mat);
     }
