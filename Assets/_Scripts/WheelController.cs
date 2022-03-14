@@ -58,8 +58,8 @@ public class WheelController : MonoBehaviour
         leftWheel.motorTorque = Mathf.Clamp(leftWheel.motorTorque + speedCorrection + angleCorrection, -20, 20);
         rightWheel.motorTorque = Mathf.Clamp(rightWheel.motorTorque + speedCorrection - angleCorrection, -20, 20);
 
-        print($"speed {speedCorrection} = pid({speedError}, dt) {Time.unscaledTime - startTime}");
-        print($"angle {angleCorrection} = pid({angleError}, dt) {Time.unscaledTime - startTime}");
+        // print($"speed {speedCorrection} = pid({speedError}, dt) {Time.unscaledTime - startTime}");
+        // print($"angle {angleCorrection} = pid({angleError}, dt) {Time.unscaledTime - startTime}");
 
         ApplyLocalPositionToVisuals(leftWheel);
         ApplyLocalPositionToVisuals(rightWheel);

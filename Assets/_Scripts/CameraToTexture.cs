@@ -8,7 +8,7 @@ public class CameraToTexture : MonoBehaviour
     private new Camera camera;
     private Texture2D texture;
     public readonly EventManager eventManager = new EventManager();
-    public static readonly EventType RenderedToTextureEvent = new EventType(typeof(Null));
+    public static readonly EventType RenderedToTextureEvent = new EventType(typeof(Texture2D));
 
     async void Start()
     {
@@ -23,7 +23,7 @@ public class CameraToTexture : MonoBehaviour
             texture.ReadPixels(new Rect(0, 0, camera.targetTexture.width, camera.targetTexture.height), 0, 0, false);
             texture.Apply();
             RenderTexture.active = currentRT;
-            eventManager.TriggerEvent(RenderedToTextureEvent, null);
+            eventManager.TriggerEvent(RenderedToTextureEvent, texture);
             await new WaitForSeconds(1f / 15f);
         }
     }
